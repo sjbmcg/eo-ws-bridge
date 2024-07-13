@@ -1,10 +1,24 @@
 import {
+  ConnectionAcceptClientPacket,
+  ConnectionPingClientPacket,
+  ConnectionPlayerServerPacket,
   EoReader,
   EoWriter,
   InitInitClientPacket,
   InitInitServerPacket,
+  InitReply,
+  InitSequenceStart,
+  PacketAction,
+  PacketFamily,
+  PacketSequencer,
+  PingSequenceStart,
+  SequenceStart,
   Version,
+  deinterleave,
   encodeNumber,
+  flipMsb,
+  interleave,
+  swapMultiples,
 } from "eolib";
 
 const app = document.getElementById("app");
@@ -17,29 +31,51 @@ const log = (message) => {
 
 const socket = new WebSocket("ws://localhost:9001");
 
+const sequencer = new PacketSequencer();
+sequencer.sequenceStart = SequenceStart.zero();
+sequencer.nextSequence();
+
+let clientEncryptionMultiple = 0;
+let serverEncryptionMultiple = 0;
+let playerId = 0;
+
 const send = (packet) => {
   const writer = new EoWriter();
   packet.serialize(writer);
 
   const buf = writer.toByteArray();
 
-  if (buf[0] === 0xff && buf[1] === 0xff) {
-    // todo: encode
+  const data = [...buf];
+  const sequence = sequencer.nextSequence();
+
+  if (packet.action !== 0xff && packet.family !== 0xff) {
+    data.unshift(sequence);
   }
 
-  const lengthBytes = encodeNumber(buf.length + 2);
+  data.unshift(packet.family);
+  data.unshift(packet.action);
 
-  const payload = new Uint8Array([
-    lengthBytes[0],
-    lengthBytes[1],
-    packet.action,
-    packet.family,
-    ...buf,
-  ]);
+  const temp = new Uint8Array(data);
+
+  if (data[0] !== 0xff && data[1] !== 0xff) {
+    swapMultiples(temp, clientEncryptionMultiple);
+    flipMsb(temp);
+    interleave(temp);
+  }
+
+  const lengthBytes = encodeNumber(temp.length);
+
+  const payload = new Uint8Array([lengthBytes[0], lengthBytes[1], ...temp]);
   socket.send(payload);
 };
 
 const handle_packet = (buf) => {
+  if (buf[0] !== 0xff && buf[1] !== 0xff) {
+    deinterleave(buf);
+    flipMsb(buf);
+    swapMultiples(buf, serverEncryptionMultiple);
+  }
+
   const action = buf[0];
   const family = buf[1];
 
@@ -47,8 +83,40 @@ const handle_packet = (buf) => {
   const reader = new EoReader(packetBuf);
 
   if (action === 0xff && family === 0xff) {
-    const serverInit = InitInitServerPacket.deserialize(reader);
-    log(`Received init packet: ${JSON.stringify(serverInit)}`);
+    const init = InitInitServerPacket.deserialize(reader);
+    log(`Received init packet: ${JSON.stringify(init)}`);
+
+    if (init.replyCode === InitReply.Ok) {
+      sequencer.sequenceStart = InitSequenceStart.fromInitValues(
+        init.replyCodeData.seq1,
+        init.replyCodeData.seq2,
+      );
+
+      clientEncryptionMultiple = init.replyCodeData.clientEncryptionMultiple;
+      serverEncryptionMultiple = init.replyCodeData.serverEncryptionMultiple;
+      playerId = init.replyCodeData.playerId;
+
+      const accept = new ConnectionAcceptClientPacket();
+      accept.serverEncryptionMultiple = serverEncryptionMultiple;
+      accept.clientEncryptionMultiple = clientEncryptionMultiple;
+      accept.playerId = playerId;
+
+      log(`Sending Connection_Accept: ${JSON.stringify(accept)}`);
+
+      send(accept);
+    }
+  }
+
+  if (action === PacketAction.Player && family === PacketFamily.Connection) {
+    const ping = ConnectionPlayerServerPacket.deserialize(reader);
+    sequencer.sequenceStart = PingSequenceStart.fromPingValues(
+      ping.seq1,
+      ping.seq2,
+    );
+
+    log("Server ping");
+
+    send(new ConnectionPingClientPacket());
   }
 };
 
