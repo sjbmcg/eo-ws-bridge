@@ -18,7 +18,7 @@ import {
   handleNearbyInfo,
   handleNpcPlayer
 } from './handlers.js';
-import { sendPacket, handlePacket } from './core.js';  // Import handlePacket too
+import { sendPacket, handlePacket } from './core.js';
 
 // Re-export all action functions for ease of use
 export { 
@@ -84,17 +84,8 @@ export function connectAndLogin() {
                  (family === PacketFamily.Range && action === PacketAction.Reply)) {
           handleNearbyInfo(reader);
         } else if (family === PacketFamily.Npc && action === PacketAction.Player) {
-          let oldPosition = reader.position;
-          try {
-            let pid = reader.getShort();
-            let direction = reader.getChar();
-            // Use seek() method instead of directly assigning to position
-            reader.seek(oldPosition); // Reset for full parsing
-          } catch (e) {
-            // Use seek() method instead of directly assigning to position
-            reader.seek(oldPosition);
-            handleNpcPlayer(reader);
-          }
+          // Simply pass to the handler without trying to peek at data
+          handleNpcPlayer(reader);
         } else if ((family === PacketFamily.Init && action === PacketAction.Init) ||
                  (family === PacketFamily.Warp && action === PacketAction.Create)) {
           state.mapLoaded = true;
