@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn accept_connection(stream: TcpStream) {
-    let mut eosocket = TcpStream::connect("localhost:8078")
+    let mut eosocket = TcpStream::connect("reoserv.net:8078")
         .await
         .expect("Error during eo server connection");
 
