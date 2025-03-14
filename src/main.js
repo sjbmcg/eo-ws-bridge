@@ -25,20 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document
-    .getElementById('toggle-custom-sequence')
-    .addEventListener('change', (e) => {
-      state.useCustomSequence = e.target.checked;
-      log(
-        `${state.useCustomSequence ? 'Enabled' : 'Disabled'} custom sequence handling`,
-      );
-    });
-
-  document.getElementById('reset-counter').addEventListener('click', () => {
-    state.customSequenceCounter = 0;
-    log('Custom sequence counter reset to 0');
-  });
-
   document.addEventListener('keydown', (e) => {
     if (!state.hasEnteredGame) return;
 

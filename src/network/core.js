@@ -13,21 +13,6 @@ import {
 
 import state, { log } from '../core/state.js';
 
-// Get next sequence using our custom 0-9 cycling counter
-export function getNextSequence() {
-  if (state.useCustomSequence) {
-    // Cycle counter from 0-9
-    state.customSequenceCounter = (state.customSequenceCounter + 1) % 10;
-
-    // Calculate actual sequence value
-    const sequence =
-      (state.customSequenceBase + state.customSequenceCounter) % 256;
-
-    return sequence;
-  }
-  return state.sequencer.nextSequence();
-}
-
 // Send a packet to the server
 export function sendPacket(packet) {
   const writer = new EoWriter();
@@ -36,11 +21,11 @@ export function sendPacket(packet) {
   const data = [...buf];
 
   // Get next sequence number
-  const sequence = getNextSequence();
+  const sequence = state.sequencer.nextSequence();
 
   // Prepend family, action, sequence
   if (packet.action !== 0xff && packet.family !== 0xff) {
-    data.unshift(sequence);
+    data.unshift(encodeNumber(sequence)[0]);
   }
   data.unshift(packet.family);
   data.unshift(packet.action);

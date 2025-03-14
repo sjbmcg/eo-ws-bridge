@@ -96,12 +96,6 @@ function createActionControls() {
       <button id="send-chat">Send Chat</button>
       <input id="chat-input" type="text" placeholder="Chat message" value="Hello world" style="width: 150px">
     </div>
-    <div style="margin-top: 10px;">
-      <label>
-        <input type="checkbox" id="toggle-custom-sequence" checked> Use Custom Sequence
-      </label>
-      <button id="reset-counter">Reset Counter</button>
-    </div>
   `;
 
   chatInput = actionControls.querySelector('#chat-input');

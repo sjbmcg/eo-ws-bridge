@@ -42,14 +42,6 @@ export function handleInitPacket(reader) {
       init.replyCodeData.serverEncryptionMultiple;
     state.playerId = init.replyCodeData.playerId;
 
-    // Set custom sequence base to match initial sequence (assuming first is position 0)
-    if (state.useCustomSequence) {
-      // Extract first sequence number the library would generate (will be position 0)
-      const firstSeq = state.sequencer.nextSequence();
-      state.customSequenceBase = firstSeq;
-      state.customSequenceCounter = 0; // Reset to 0
-    }
-
     log(`Init OK: playerId=${state.playerId}`);
 
     const accept = new ConnectionAcceptClientPacket();
@@ -74,17 +66,11 @@ export function handleInitPacket(reader) {
 export function handleConnectionPlayer(reader) {
   const ping = ConnectionPlayerServerPacket.deserialize(reader);
 
-  log(`Ping: ${JSON.stringify(ping)}`);
-
   // Update the sequence start using the ping values
   state.sequencer.sequenceStart = PingSequenceStart.fromPingValues(
     ping.seq1,
     ping.seq2,
   );
-
-  log(`Sequence Start: ${JSON.stringify(state.sequencer.sequenceStart)}`);
-
-  state.customSequenceBase = state.sequencer.sequenceStart.value;
 
   // Send ping response immediately
   sendPacket(new ConnectionPingClientPacket());
