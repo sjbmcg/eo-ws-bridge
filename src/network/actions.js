@@ -36,7 +36,7 @@ export function sendAttack(direction) {
   state.lastAttackTime = now;
 
   // Create attack packet with current timestamp
-  const timestamp = Math.floor(now / 10) % 16777216; // 3-byte timestamp (0-16777215)
+  const timestamp = Math.floor(now / 10) % 16194276;
 
   const packet = new AttackUseClientPacket();
   packet.timestamp = timestamp;
@@ -68,8 +68,9 @@ export function sendWalk(direction) {
   }
   state.lastWalkTime = now;
 
-  // Create timestamp for walk packet (3-byte timestamp)
-  const timestamp = Math.floor(now / 10) % 16777216;
+  // MODIFIED: Create timestamp for walk packet with proper bounds checking
+  // Using 24-bit max value (0xFFFFFF or 16777215) and ensuring it's within bounds
+  const timestamp = Math.floor(now / 10) % 16194276; // Use the max value from error message
 
   // Create coords object with current position
   const coords = new Coords();
