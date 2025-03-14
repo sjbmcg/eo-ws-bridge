@@ -1,15 +1,15 @@
 // network-core.js - Core network handling functionality
 import {
-  EoWriter,
   EoReader,
+  EoWriter,
   PacketAction,
   PacketFamily,
-  encodeNumber,
   deinterleave,
+  encodeNumber,
   flipMsb,
+  interleave,
   swapMultiples,
-  interleave
-} from "eolib";
+} from 'eolib';
 
 import state, { log } from '../core/state.js';
 
@@ -18,26 +18,26 @@ export function getNextSequence() {
   if (state.useCustomSequence) {
     // Cycle counter from 0-9
     state.customSequenceCounter = (state.customSequenceCounter + 1) % 10;
-    
+
     // Calculate actual sequence value
-    const sequence = (state.customSequenceBase + state.customSequenceCounter) % 256;
-    
+    const sequence =
+      (state.customSequenceBase + state.customSequenceCounter) % 256;
+
     return sequence;
-  } else {
-    return state.sequencer.nextSequence();
   }
+  return state.sequencer.nextSequence();
 }
 
 // Send a packet to the server
 export function sendPacket(packet) {
-  let writer = new EoWriter();
+  const writer = new EoWriter();
   packet.serialize(writer);
-  let buf = writer.toByteArray();
-  let data = [...buf];
-  
+  const buf = writer.toByteArray();
+  const data = [...buf];
+
   // Get next sequence number
-  let sequence = getNextSequence();
-  
+  const sequence = getNextSequence();
+
   // Prepend family, action, sequence
   if (packet.action !== 0xff && packet.family !== 0xff) {
     data.unshift(sequence);
@@ -46,7 +46,7 @@ export function sendPacket(packet) {
   data.unshift(packet.action);
 
   // Encrypt
-  let temp = new Uint8Array(data);
+  const temp = new Uint8Array(data);
   if (temp[0] !== 0xff && temp[1] !== 0xff) {
     swapMultiples(temp, state.clientEncryptionMultiple);
     flipMsb(temp);
@@ -54,8 +54,8 @@ export function sendPacket(packet) {
   }
 
   // Add length
-  let lengthBytes = encodeNumber(temp.length);
-  let payload = new Uint8Array([lengthBytes[0], lengthBytes[1], ...temp]);
+  const lengthBytes = encodeNumber(temp.length);
+  const payload = new Uint8Array([lengthBytes[0], lengthBytes[1], ...temp]);
 
   log(`Sending packet - Family=${packet.family}, Action=${packet.action}`);
   state.socket.send(payload);
@@ -69,14 +69,14 @@ export function handlePacket(buf) {
     flipMsb(buf);
     swapMultiples(buf, state.serverEncryptionMultiple);
   }
-  let action = buf[0];
-  let family = buf[1];
-  let reader = new EoReader(buf.slice(2));
+  const action = buf[0];
+  const family = buf[1];
+  const reader = new EoReader(buf.slice(2));
 
   // Log received packet unless it's a ping
   if (!(family === PacketFamily.Connection && action === PacketAction.Player)) {
     log(`Received packet - Family=${family}, Action=${action}`);
   }
-  
+
   return { action, family, reader };
 }

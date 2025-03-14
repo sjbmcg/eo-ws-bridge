@@ -1,5 +1,5 @@
 // state.js - Shared application state
-import { SequenceStart, PacketSequencer } from 'eolib';
+import { PacketSequencer, SequenceStart } from 'eolib';
 
 // Create a state object to hold all mutable state
 const state = {
@@ -14,8 +14,8 @@ const state = {
 
   // Custom sequence handling state
   useCustomSequence: true,
-  customSequenceBase: 0,  // Base value for sequence
-  customSequenceCounter: 0,  // Counter from 0-9 that cycles
+  customSequenceBase: 0, // Base value for sequence
+  customSequenceCounter: 0, // Counter from 0-9 that cycles
 
   // Game state
   hasEnteredGame: false,
@@ -29,7 +29,7 @@ const state = {
 
   // UI state references
   logContainer: null,
-  
+
   // Reset application state
   reset() {
     this.mapLoaded = false;
@@ -40,25 +40,25 @@ const state = {
     this.lastAttackTime = 0;
     this.customSequenceCounter = 0;
     this.customSequenceBase = 0;
-    
+
     this.sequencer = new PacketSequencer(SequenceStart.zero());
     this.sequencer.nextSequence(); // Initial call to advance counter
   },
-  
+
   // Set log container reference
   setLogContainer(container) {
     this.logContainer = container;
-  }
+  },
 };
 
 // Logging function
 export function log(msg) {
   if (!state.logContainer) {
-    console.log("Log container not set:", msg);
+    console.log('Log container not set:', msg);
     return;
   }
-  
-  const entry = document.createElement("div");
+
+  const entry = document.createElement('div');
   entry.textContent = msg;
   state.logContainer.appendChild(entry);
   state.logContainer.scrollTop = state.logContainer.scrollHeight;
