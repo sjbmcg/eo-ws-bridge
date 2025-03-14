@@ -16,6 +16,8 @@ import {
   PlayersRemoveServerPacket,
   RangeReplyServerPacket,
   RefreshReplyServerPacket,
+  WarpAcceptClientPacket,
+  WarpRequestServerPacket,
   WelcomeCode,
   WelcomeMsgClientPacket,
   WelcomeReplyServerPacket,
@@ -72,11 +74,17 @@ export function handleInitPacket(reader) {
 export function handleConnectionPlayer(reader) {
   const ping = ConnectionPlayerServerPacket.deserialize(reader);
 
+  log(`Ping: ${JSON.stringify(ping)}`);
+
   // Update the sequence start using the ping values
   state.sequencer.sequenceStart = PingSequenceStart.fromPingValues(
     ping.seq1,
     ping.seq2,
   );
+
+  log(`Sequence Start: ${JSON.stringify(state.sequencer.sequenceStart)}`);
+
+  state.customSequenceBase = state.sequencer.sequenceStart.value;
 
   // Send ping response immediately
   sendPacket(new ConnectionPingClientPacket());
@@ -233,6 +241,14 @@ export function handleRefreshReply(reader) {
 export function handleRangeReply(reader) {
   const packet = RangeReplyServerPacket.deserialize(reader);
   processNearbyInfo(packet.nearby);
+}
+
+export function handleWarpRequest(reader) {
+  const packet = WarpRequestServerPacket.deserialize(reader);
+  const reply = new WarpAcceptClientPacket();
+  reply.mapId = packet.mapId;
+  reply.sessionId = packet.sessionId;
+  sendPacket(reply);
 }
 
 // Complete game entry

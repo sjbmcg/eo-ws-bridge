@@ -19,6 +19,7 @@ import {
   handlePlayersRemove,
   handleRangeReply,
   handleRefreshReply,
+  handleWarpRequest,
   handleWelcomeReply,
 } from './handlers.js';
 
@@ -122,6 +123,11 @@ export function connectAndLogin() {
       ) {
         state.mapLoaded = true;
         log('Map data received');
+      } else if (
+        family === PacketFamily.Warp &&
+        action === PacketAction.Request
+      ) {
+        handleWarpRequest(reader);
       }
     });
   });
